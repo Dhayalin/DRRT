@@ -6,7 +6,7 @@
    and both maps use real OpenStreetMap tiles via Leaflet.
    ========================================================================= */
 
-const API_BASE = window.localStorage.getItem('drrt_api_base') || 'http://localhost:8000';
+const API_BASE = window.localStorage.getItem('drrt_api_base') || 'https://PLACEHOLDER.vercel.app';
 document.getElementById('apiBaseLabel') && (document.getElementById('apiBaseLabel').textContent = API_BASE);
 
 /* ---------------- session state ---------------- */
