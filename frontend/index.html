@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DRRT — Disaster Relief Resource Tracker</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#141b22; --panel-2:#1b2430; --border:#2a3541;
+    --text:#e8ecef; --text-dim:#8b98a5; --text-faint:#5b6774;
+    --amber:#f2a93b; --safe:#3ddc84; --danger:#ef4444; --info:#4f9dde;
+    --font-ui:'IBM Plex Sans',-apple-system,Segoe UI,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);-webkit-font-smoothing:antialiased;min-height:100vh;}
+
+  /* ---- login screen ---- */
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-card{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:28px;}
+  .login-card h1{font-size:19px;margin:0 0 2px 0;}
+  .login-card .sub{color:var(--text-dim);font-size:12.5px;margin:0 0 20px 0;}
+  .login-tabs{display:flex;gap:2px;margin-bottom:18px;border-bottom:1px solid var(--border);}
+  .login-tabs button{flex:1;background:none;border:none;color:var(--text-faint);font-family:var(--font-ui);font-size:13px;padding:9px 0;cursor:pointer;border-bottom:2px solid transparent;}
+  .login-tabs button.active{color:var(--text);border-bottom-color:var(--amber);}
+  .login-error{color:var(--danger);font-size:12px;margin-top:10px;min-height:16px;font-family:var(--font-mono);}
+  .demo-hint{margin-top:16px;padding:10px 12px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);line-height:1.7;}
+  .demo-hint b{color:var(--amber);}
+
+  /* ---- top signal bar ---- */
+  .signalbar{display:flex;align-items:center;gap:14px;padding:8px 18px;background:linear-gradient(180deg,#10161d,#0d1117);border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:12px;color:var(--text-dim);flex-wrap:wrap;}
+  .signalbar .brandmark{font-family:var(--font-mono);font-weight:600;color:var(--amber);letter-spacing:.14em;font-size:12px;padding-right:12px;border-right:1px solid var(--border);}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px;position:relative;top:-1px;}
+  .dot.online{background:var(--safe);box-shadow:0 0 8px var(--safe);animation:pulse 2s infinite;}
+  .dot.offline{background:var(--danger);box-shadow:0 0 8px var(--danger);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .conn-toggle{margin-left:auto;display:flex;align-items:center;gap:10px;}
+  .btn-tiny{font-family:var(--font-mono);font-size:11px;background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);padding:5px 10px;border-radius:3px;cursor:pointer;letter-spacing:.05em;}
+  .btn-tiny:hover{border-color:var(--amber);color:var(--amber);}
+  .queue-pill{font-family:var(--font-mono);font-size:11px;background:rgba(242,169,59,.12);color:var(--amber);border:1px solid rgba(242,169,59,.35);padding:3px 9px;border-radius:20px;display:none;}
+  .queue-pill.show{display:inline-block;}
+
+  header.app{padding:22px 28px 0 28px;}
+  h1.title{font-size:22px;margin:0 0 2px 0;letter-spacing:-.01em;font-weight:600;}
+  .subtitle{color:var(--text-dim);font-size:13px;margin:0 0 18px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .whoami{font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);}
+  .whoami b{color:var(--amber);}
+  nav.roles{display:flex;gap:2px;border-bottom:1px solid var(--border);}
+  nav.roles button{background:none;border:none;color:var(--text-faint);font-family:var(--font-ui);font-size:13.5px;font-weight:500;padding:10px 18px 12px 18px;cursor:pointer;border-bottom:2px solid transparent;display:flex;align-items:center;gap:8px;}
+  nav.roles button .tag{font-family:var(--font-mono);font-size:10px;color:var(--text-faint);background:var(--panel-2);border:1px solid var(--border);padding:1px 6px;border-radius:3px;}
+  nav.roles button.active{color:var(--text);border-bottom-color:var(--amber);}
+  nav.roles button.active .tag{color:var(--amber);border-color:rgba(242,169,59,.4);}
+  nav.roles button:hover{color:var(--text);}
+  #logoutBtn{margin-left:auto;}
+
+  main{padding:22px 28px 60px 28px; max-width:1180px; margin:0 auto;}
+  .view{display:none;animation:fade .25s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .grid{display:grid;gap:14px;}
+  .grid.stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:20px;}
+  .grid.two{grid-template-columns:1.3fr 1fr;align-items:start;}
+  .grid.shelters{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));}
+  @media (max-width:820px){.grid.two{grid-template-columns:1fr;}}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;}
+  .stat-card .num{font-family:var(--font-mono);font-size:26px;font-weight:600;color:var(--text);}
+  .stat-card .lbl{font-size:11.5px;color:var(--text-dim);margin-top:2px;letter-spacing:.02em;}
+  .stat-card.warn .num{color:var(--amber);}
+  .stat-card.danger .num{color:var(--danger);}
+  .stat-card.safe .num{color:var(--safe);}
+
+  h2.section{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-weight:600;margin:26px 0 12px 0;display:flex;align-items:center;gap:8px;}
+  h2.section:first-child{margin-top:0;}
+  h2.section::after{content:"";flex:1;height:1px;background:var(--border);}
+
+  .shelter-card{display:flex;flex-direction:column;gap:10px;}
+  .shelter-card .head{display:flex;justify-content:space-between;align-items:flex-start;}
+  .shelter-card .name{font-weight:600;font-size:14.5px;}
+  .shelter-card .id{font-family:var(--font-mono);font-size:10.5px;color:var(--text-faint);}
+  .status-chip{font-family:var(--font-mono);font-size:10px;letter-spacing:.05em;padding:2px 8px;border-radius:20px;white-space:nowrap;height:fit-content;}
+  .status-chip.open{background:rgba(61,220,132,.12);color:var(--safe);border:1px solid rgba(61,220,132,.35);}
+  .status-chip.full{background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.35);}
+  .status-chip.limited{background:rgba(242,169,59,.12);color:var(--amber);border:1px solid rgba(242,169,59,.35);}
+
+  .dotgrid{display:grid;grid-template-columns:repeat(20,1fr);gap:2px;}
+  .dotgrid span{width:100%;padding-top:100%;border-radius:1px;background:var(--panel-2);display:block;}
+  .dotgrid span.filled{background:var(--info);}
+  .bedline{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:4px;}
+
+  .resline{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+  .res-badge{font-size:10.5px;font-family:var(--font-mono);padding:3px 7px;border-radius:4px;border:1px solid var(--border);color:var(--text-dim);}
+  .res-badge.ok{color:var(--safe);border-color:rgba(61,220,132,.3);}
+  .res-badge.low{color:var(--amber);border-color:rgba(242,169,59,.3);}
+  .res-badge.out{color:var(--danger);border-color:rgba(239,68,68,.3);}
+  .meta-time{font-family:var(--font-mono);font-size:10px;color:var(--text-faint);margin-top:2px;}
+
+  label{display:block;font-size:11.5px;color:var(--text-dim);margin:12px 0 5px 0;letter-spacing:.02em;}
+  label:first-child{margin-top:0;}
+  select,input[type=text],input[type=number],input[type=password],textarea{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    padding:8px 10px;border-radius:5px;font-family:var(--font-ui);font-size:13px;
+  }
+  select:focus,input:focus,textarea:focus{outline:none;border-color:var(--info);}
+  textarea{resize:vertical;min-height:60px;}
+  .btn{background:var(--amber);color:#1a1206;border:none;font-weight:600;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:13px;margin-top:16px;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn.secondary{background:var(--panel-2);color:var(--text);border:1px solid var(--border);}
+  .btn.danger{background:var(--danger);color:#fff;}
+  .btn.full{width:100%;}
+  .btn:active{transform:translateY(1px);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+  .list-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;background:var(--panel-2);margin-bottom:8px;font-size:13px;}
+  .list-item .left{display:flex;flex-direction:column;gap:2px;}
+  .list-item .tag-type{font-family:var(--font-mono);font-size:10px;color:var(--text-faint);}
+  .list-item .verify-btn{font-size:11px;padding:5px 10px;}
+  .list-item img.thumb{width:44px;height:44px;object-fit:cover;border-radius:4px;border:1px solid var(--border);}
+
+  .synclog{font-family:var(--font-mono);font-size:11.5px;max-height:200px;overflow-y:auto;}
+  .synclog .entry{padding:5px 0;border-bottom:1px dashed var(--border);color:var(--text-dim);display:flex;justify-content:space-between;gap:10px;}
+  .synclog .entry:last-child{border-bottom:none;}
+  .synclog .entry .st{color:var(--amber);}
+  .synclog .entry.done .st{color:var(--safe);}
+  .synclog .entry.conflict .st{color:var(--danger);}
+  .empty{color:var(--text-faint);font-size:12px;font-family:var(--font-mono);padding:8px 0;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{text-align:left;color:var(--text-dim);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--border);}
+  td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:12px;}
+  tr:last-child td{border-bottom:none;}
+
+  .sos-btn{background:var(--danger);color:#fff;border:none;padding:16px;border-radius:8px;font-weight:700;font-size:15px;width:100%;cursor:pointer;letter-spacing:.04em;}
+  .sos-btn:hover{filter:brightness(1.1);}
+  .sos-btn:disabled{opacity:.6;cursor:wait;}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:11px 18px;border-radius:7px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s ease; z-index:999; font-family:var(--font-mono);max-width:90vw;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.ok{border-color:rgba(61,220,132,.4);color:var(--safe);}
+  .toast.warn{border-color:rgba(242,169,59,.4);color:var(--amber);}
+  .toast.err{border-color:rgba(239,68,68,.4);color:var(--danger);}
+
+  .heatbar{height:8px;border-radius:4px;background:var(--panel-2);overflow:hidden;margin-top:6px;}
+  .heatbar > div{height:100%;background:linear-gradient(90deg,var(--safe),var(--amber),var(--danger));}
+  .route-note{display:flex;gap:10px;align-items:flex-start;background:rgba(79,157,222,.08);border:1px solid rgba(79,157,222,.3);padding:10px 12px;border-radius:6px;font-size:12.5px;color:var(--text-dim);}
+  .footer-note{color:var(--text-faint);font-size:11px;font-family:var(--font-mono);margin-top:40px;text-align:center;}
+
+  #map, #authMap{height:340px;border-radius:8px;border:1px solid var(--border);}
+  .gps-note{font-family:var(--font-mono);font-size:10.5px;color:var(--text-faint);margin-top:6px;}
+  .leaflet-popup-content-wrapper{background:var(--panel-2);color:var(--text);}
+  .leaflet-popup-tip{background:var(--panel-2);}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <h1>DRRT</h1>
+    <p class="sub">Offline-first disaster relief coordination — sign in to continue</p>
+    <div class="login-tabs">
+      <button class="active" data-mode="login">Sign in</button>
+      <button data-mode="register">Register</button>
+    </div>
+    <div id="loginFields">
+      <label>Username</label>
+      <input type="text" id="loginUser" autocomplete="username">
+      <label>Password</label>
+      <input type="password" id="loginPass" autocomplete="current-password">
+    </div>
+    <div id="registerFields" style="display:none;">
+      <label>Full name</label>
+      <input type="text" id="regName">
+      <label>Username</label>
+      <input type="text" id="regUser">
+      <label>Password</label>
+      <input type="password" id="regPass">
+      <label>I am a…</label>
+      <select id="regRole">
+        <option value="survivor">Survivor</option>
+        <option value="volunteer">Volunteer</option>
+        <option value="authority">Authority</option>
+      </select>
+    </div>
+    <button class="btn full" id="loginSubmit">Sign in</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="demo-hint">
+      Demo accounts (password <b>password123</b>):<br>
+      <b>survivor1</b> · <b>vol1</b> · <b>authority1</b><br>
+      API target: <span id="apiBaseLabel"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="appWrap" style="display:none;">
+<div class="signalbar">
+  <span class="brandmark">DRRT</span>
+  <span id="connLabel"><span class="dot online" id="connDot"></span><span id="connText">ONLINE — live sync</span></span>
+  <span class="queue-pill" id="queuePill">0 pending</span>
+  <span id="lastSync">last sync: --:--:--</span>
+  <div class="conn-toggle">
+    <button class="btn-tiny" id="connToggleBtn">SIMULATE OFFLINE</button>
+  </div>
+</div>
+
+<header class="app">
+  <h1 class="title">Disaster Relief Resource Tracker</h1>
+  <p class="subtitle">
+    <span>Offline-first coordination for survivors, volunteers &amp; authorities · live backend, real auth &amp; sync</span>
+    <span class="whoami">signed in as <b id="whoamiName"></b> (<span id="whoamiRole"></span>) · <a href="#" id="logoutBtn" class="btn-tiny" style="text-decoration:none;">LOG OUT</a></span>
+  </p>
+  <nav class="roles" id="roleNav"></nav>
+</header>
+
+<main>
+
+  <!-- ================= SURVIVOR VIEW ================= -->
+  <section class="view" id="view-survivor">
+    <div class="grid two">
+      <div>
+        <h2 class="section">Nearby shelters</h2>
+        <div id="map"></div>
+        <label style="margin-bottom:10px;">Filter by need</label>
+        <select id="survivorFilter">
+          <option value="all">All shelters</option>
+          <option value="food">Has food</option>
+          <option value="water">Has water</option>
+          <option value="medical">Has medical support</option>
+          <option value="beds">Has open beds</option>
+        </select>
+        <div class="grid shelters" id="shelterListSurvivor" style="margin-top:14px;"></div>
+      </div>
+      <div>
+        <h2 class="section">Emergency</h2>
+        <button class="sos-btn" id="sosBtn">SEND SOS</button>
+        <p class="gps-note" id="sosGpsNote">Will request your device's real GPS location when pressed.</p>
+
+        <h2 class="section">Report an incident</h2>
+        <div class="card">
+          <label>Incident type</label>
+          <select id="incType">
+            <option>Flood</option><option>Fire</option><option>Road Block</option>
+            <option>Building Collapse</option><option>Landslide</option><option>Injured Person</option>
+          </select>
+          <label>Description</label>
+          <textarea id="incDesc" placeholder="What are you seeing? Location details help."></textarea>
+          <label>Attach photo</label>
+          <input type="file" id="incPhoto" accept="image/*" capture="environment">
+          <button class="btn secondary" id="incGetGps" type="button">📍 Capture my GPS location</button>
+          <p class="gps-note" id="incGpsNote">No location captured yet.</p>
+          <button class="btn" id="incSubmit">Report incident</button>
+        </div>
+
+        <h2 class="section">Safe route notice</h2>
+        <div class="route-note">
+          ⚠ Direct route to <b style="color:var(--text)">Shelter SH-04 — Riverside School</b> passes a flagged flooded road. Recommended detour adds ~12 min via NH-48 bypass.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VOLUNTEER VIEW ================= -->
+  <section class="view" id="view-volunteer">
+    <div class="grid two">
+      <div>
+        <h2 class="section">Update shelter status</h2>
+        <div class="card">
+          <label>Shelter</label>
+          <select id="volShelterSelect"></select>
+          <div class="row2">
+            <div><label>Current occupancy</label><input type="number" id="volOcc" min="0"></div>
+            <div><label>Capacity</label><input type="number" id="volCap" min="0"></div>
+          </div>
+          <div class="row2">
+            <div><label>Food stock</label><select id="volFood"><option>OK</option><option>Low</option><option>Out</option></select></div>
+            <div><label>Water stock</label><select id="volWater"><option>OK</option><option>Low</option><option>Out</option></select></div>
+          </div>
+          <div class="row2">
+            <div><label>Medicine stock</label><select id="volMed"><option>OK</option><option>Low</option><option>Out</option></select></div>
+            <div><label>Medical facility</label><select id="volMedical"><option>Available</option><option>Unavailable</option></select></div>
+          </div>
+          <p class="gps-note">Server version currently loaded: <b id="volBaseVersion">-</b> — if someone else's edit lands first, your non-conflicting fields still merge; the field they changed more recently wins.</p>
+          <button class="btn" id="volSubmit">Push update</button>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="section">Incidents to verify</h2>
+        <div id="incidentVerifyList"></div>
+
+        <h2 class="section">My tasks</h2>
+        <div id="taskList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= AUTHORITY VIEW ================= -->
+  <section class="view" id="view-authority">
+    <div class="grid stats">
+      <div class="card stat-card"><div class="num" id="statShelters">--</div><div class="lbl">Active shelters</div></div>
+      <div class="card stat-card safe"><div class="num" id="statBeds">--</div><div class="lbl">Beds available</div></div>
+      <div class="card stat-card warn"><div class="num" id="statOccPct">--</div><div class="lbl">Avg. occupancy</div></div>
+      <div class="card stat-card danger"><div class="num" id="statIncidents">--</div><div class="lbl">Open incidents</div></div>
+      <div class="card stat-card danger"><div class="num" id="statSos">--</div><div class="lbl">Open SOS alerts</div></div>
+    </div>
+
+    <h2 class="section">Live shelter map &amp; incident heatmap</h2>
+    <div id="authMap"></div>
+
+    <div class="grid two">
+      <div>
+        <h2 class="section">Shelter network</h2>
+        <div class="card" style="padding:0;overflow-x:auto;">
+          <table id="shelterTable">
+            <thead><tr><th>Shelter</th><th>Occ.</th><th>Food</th><th>Water</th><th>Med.</th><th>v</th><th>Updated</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <h2 class="section">Resource pressure by camp</h2>
+        <div class="card" id="pressureCard"></div>
+      </div>
+      <div>
+        <h2 class="section">Incident feed</h2>
+        <div id="authorityIncidentFeed"></div>
+
+        <h2 class="section">SOS alerts</h2>
+        <div id="sosFeed"></div>
+
+        <h2 class="section">Sync activity (server-verified)</h2>
+        <div class="card">
+          <div class="synclog" id="syncLog"><div class="empty">no activity yet</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="footer-note">DRRT · connected to live FastAPI + SQLite backend at <span id="footerApi"></span> · offline queue is real (localStorage) and replays via /sync/batch</p>
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
