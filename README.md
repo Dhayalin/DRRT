@@ -1,4 +1,4 @@
-# DRRT — Disaster Relief Resource Tracker (v2)
+# DRRT — Disaster Relief Resource Tracker
 
 This replaces the single-file HTML mockup with the real stack the spec
 called for. Everything below has been implemented and actually tested
