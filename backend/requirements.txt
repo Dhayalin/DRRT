@@ -1,0 +1,9 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+sqlalchemy>=2.0
+python-jose[cryptography]>=3.3
+python-multipart>=0.0.9
+bcrypt==4.1.2
+
+# Optional, for Postgres cloud DB mode (DATABASE_URL=postgresql+psycopg2://...):
+# psycopg2-binary>=2.9
