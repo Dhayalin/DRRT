@@ -548,7 +548,7 @@ async function renderAuthority() {
 
   document.getElementById('authorityIncidentFeed').innerHTML = incidents.map(i => `
     <div class="list-item">
-      ${i.photo_path ? `<img class="thumb" src="${API_BASE}${i.photo_path}">` : ''}
+      ${i.photo_path ? `<img class="thumb" src="${i.photo_path}">` : ''}
       <div class="left" style="flex:1;">
         <div><b>${i.type}</b> — ${i.description}</div>
         <div class="tag-type">${i.code} · ${new Date(i.created_at).toLocaleTimeString()} · reported by ${i.reported_by}</div>
