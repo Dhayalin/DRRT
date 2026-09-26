@@ -480,7 +480,7 @@ function renderVerifyList() {
   if (unverified.length === 0) { wrap.innerHTML = '<div class="empty">Nothing awaiting verification.</div>'; return; }
   wrap.innerHTML = unverified.map(i => `
     <div class="list-item">
-      ${i.photo_path ? `<img class="thumb" src="${API_BASE}${i.photo_path}">` : ''}
+      ${i.photo_path ? `<img class="thumb" src="${i.photo_path}">` : ''}
       <div class="left" style="flex:1;">
         <div><b>${i.type}</b> — ${i.description}</div>
         <div class="tag-type">${i.code} · reported by ${i.reported_by} · ${new Date(i.created_at).toLocaleTimeString()}</div>
