@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "DRRT",
+    "slug": "drrt-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0d1117",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "DRRT needs your location to send SOS alerts and geotag incident reports.",
+        "NSCameraUsageDescription": "DRRT needs camera access to attach photos to incident reports."
+      }
+    },
+    "android": {
+      "package": "org.drrt.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
+      ]
+    }
+  }
+}
