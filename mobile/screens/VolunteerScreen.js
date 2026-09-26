@@ -155,7 +155,7 @@ export default function VolunteerScreen({ session, online, onLogout, onQueueChan
           ListEmptyComponent={<Text style={styles.empty}>Nothing awaiting verification.</Text>}
           renderItem={({ item: i }) => (
             <View style={styles.incRow}>
-              {i.photo_path ? <Image source={{ uri: `http://localhost:8000${i.photo_path}` }} style={styles.thumb} /> : null}
+              {i.photo_path ? <Image source={{ uri: i.photo_path }} style={styles.thumb} /> : null}
               <View style={{ flex: 1 }}>
                 <Text style={styles.incTitle}>{i.type} — {i.description}</Text>
                 <Text style={styles.incMeta}>{i.code} · reported by {i.reported_by}</Text>
