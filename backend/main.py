@@ -165,7 +165,7 @@ def incidents_heatmap(db: Session = Depends(get_db), user: models.User = Depends
 
 
 @app.post("/incidents", response_model=schemas.IncidentOut)
-def report_incident(
+async def report_incident(
     type: str = Form(...),
     description: str = Form(""),
     lat: Optional[float] = Form(None),
@@ -183,12 +183,12 @@ def report_incident(
 
     photo_path = None
     if photo is not None and photo.filename:
+        from vercel.blob import AsyncBlobClient
         ext = os.path.splitext(photo.filename)[1] or ".jpg"
         fname = f"{uuid.uuid4().hex}{ext}"
-        dest = os.path.join(UPLOAD_DIR, fname)
-        with open(dest, "wb") as f:
-            shutil.copyfileobj(photo.file, f)
-        photo_path = f"/uploads/{fname}"
+        blob_client = AsyncBlobClient()
+        blob = await blob_client.put(f"incidents/{fname}", await photo.read(), access="public")
+        photo_path = blob.url
 
     code = f"INC-{uuid.uuid4().hex[:6].upper()}"
     inc = models.Incident(
