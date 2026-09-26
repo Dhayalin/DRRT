@@ -6,4 +6,5 @@ python-multipart>=0.0.9
 bcrypt==4.1.2
 
 # Optional, for Postgres cloud DB mode (DATABASE_URL=postgresql+psycopg2://...):
-# psycopg2-binary>=2.9
+psycopg2-binary>=2.9
+vercel
