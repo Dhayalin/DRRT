@@ -21,8 +21,7 @@ from resolver import apply_shelter_update
 
 Base.metadata.create_all(bind=engine)
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 
 app = FastAPI(title="DRRT API", version="0.1.0")
 
@@ -33,7 +32,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
 
 
 def log_sync(db: Session, actor: str, action: str, entity: str, entity_id, outcome: str, detail: str = ""):
